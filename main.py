@@ -148,30 +148,24 @@ if not st.session_state['logged_in']:
         c_pw = st.text_input("Client Secret", type="password")
     
     if st.button("✅ 시작", use_container_width=True):
-            # 1. 입력값의 앞뒤 공백을 즉시 제거 (자동완성 오류 방지 핵심)
-            clean_id = c_id.strip() if c_id else ""
-            clean_pw = c_pw.strip() if c_pw else ""
-
-            if clean_id and clean_pw:
-                # 2. 전처리된 값을 세션에 임시 저장
-                st.session_state['client_id'] = clean_id
-                st.session_state['client_secret'] = clean_pw
-                
-                # 3. 테스트 호출 (인자 전달 방식 확인 필요)
-                # 만약 get_naver_news가 세션값을 자동으로 참조한다면 인자를 뺄 수도 있습니다.
-                test_res = get_naver_news(clean_id, clean_pw, "테스트", 1, 1)
-                
-                if test_res is not None: 
-                    # 성공 시 (빈 리스트([])가 오더라도 None만 아니면 키는 유효함)
-                    st.session_state['logged_in'] = True
-                    st.rerun()
-                else:
-                    # 실패 시 세션 초기화
-                    st.session_state['client_id'] = None
-                    st.session_state['client_secret'] = None
-                    st.error("인증에 실패했습니다. ID와 Secret을 다시 확인해주세요.")
+        if c_id and c_pw:
+            # 임시로 세션에 저장해보고 테스트 호출
+            st.session_state['client_id'] = c_id
+            st.session_state['client_secret'] = c_pw
+            
+            # 테스트 검색 (단어 하나로 유효성 확인)
+            test_res = get_naver_news("테스트", 1, 1)
+            
+            if test_res is not None: # 성공 시 (빈 리스트일지라도 None이 아니면 키는 정상)
+                st.session_state['logged_in'] = True
+                st.success("인증 성공!")
+                st.rerun()
             else:
-                st.warning("ID와 Secret을 모두 입력해 주세요.")
+                # 에러 메시지는 get_naver_news 안에서 st.error로 출력됨
+                st.session_state['client_id'] = None
+                st.session_state['client_secret'] = None
+        else:
+            st.warning("ID와 Secret을 모두 입력해 주세요.")
 else:
     render_header()
     
