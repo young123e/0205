@@ -130,9 +130,9 @@ if not st.session_state['logged_in']:
     
     col1, col2 = st.columns(2)
     with col1:
-        c_id = st.text_input("Client ID", placeholder="네이버 개발자 센터 발급 ID")
+        c_id = st.text_input("Client ID")
     with col2:
-        c_pw = st.text_input("Client Secret", type="password", placeholder="네이버 개발자 센터 발급 Secret")
+        c_pw = st.text_input("Client Secret", type="password")
     
     if st.button("✅ 시작", use_container_width=True):
         if c_id and c_pw:
@@ -170,7 +170,7 @@ else:
                     label_visibility="collapsed" # 레이블을 완전히 제거하고 공간도 안 차지함
                 )
             with col2:
-                if st.button("단어장에서 삭제"):
+                if st.button("단어 삭제"):
                     save_user_stopwords(saved_stops - set(to_del)); st.rerun()
         else: st.info("저장된 단어가 없습니다.")
 
