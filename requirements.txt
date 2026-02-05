@@ -1,0 +1,9 @@
+beautifulsoup4
+requests
+pandas
+numpy
+joblib
+Pillow
+wordcloud
+matplotlib
+streamlit-lottie
