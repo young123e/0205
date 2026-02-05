@@ -77,12 +77,24 @@ def getTokenizer():
             return pickle.load(f)
     except: return None
 
-def get_font_path():
-    p = platform.system()
-    if p == 'Windows': return 'C:/Windows/Fonts/malgun.ttf'
-    elif p == 'Darwin': return '/System/Library/Fonts/Supplemental/AppleGothic.ttf'
+def get_font_path() -> Optional[str]:
+    # 1. 먼저 resources 폴더에 직접 업로드한 폰트가 있는지 확인
+    local_font = './resources/NanumGothic.ttf' # 파일명에 맞춰 수정
+    if os.path.exists(local_font):
+        return local_font
+    
+    # 2. 없을 경우 시스템 폰트 시도 (기존 로직)
+    system = platform.system()
+    if system == 'Windows':
+        return 'C:/Windows/Fonts/malgun.ttf'
+    elif system == 'Darwin':
+        return '/System/Library/Fonts/AppleGothic.ttf'
+    elif system == 'Linux':
+        # 리눅스 서버 기본 폰트 경로 (설치되어 있을 경우)
+        linux_font = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
+        if os.path.exists(linux_font):
+            return linux_font
     return None
-
 def plotChart(count_dict, container):
     try:
         img_path = './resources/background_0.png'
