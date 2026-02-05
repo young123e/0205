@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from streamlit_lottie import st_lottie
 import platform
 import os
+import urllib.error
 
 # --- [1. 설정 및 데이터 관리 함수] ---
 st.set_page_config(page_title="🔍 뉴스 키워드 시각화")
@@ -42,11 +43,22 @@ def get_naver_news(keyword, display, start):
     request = urllib.request.Request(url)
     request.add_header("X-Naver-Client-Id", client_id)
     request.add_header("X-Naver-Client-Secret", client_secret)
+    
     try:
         response = urllib.request.urlopen(request)
         if response.getcode() == 200:
             return json.loads(response.read().decode('utf-8'))['items']
-    except: return []
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            st.error("❌ API 키가 올바르지 않습니다. Client ID와 Secret을 다시 확인해주세요.")
+        elif e.code == 403:
+            st.error("❌ API 권한이 없거나 호출 한도를 초과했습니다.")
+        else:
+            st.error(f"❌ API 오류 발생: {e.code}")
+        return None # 빈 리스트 대신 None을 반환하여 에러임을 표시
+    except Exception as e:
+        st.error(f"❌ 연결 오류: {str(e)}")
+        return None
 
 def cleanText(text):
     text = re.sub(r'\d|[a-zA-Z]|\W',' ', text)
@@ -111,21 +123,34 @@ def render_header():
             st.session_state.clear(); st.rerun()
 
 # --- [3. 메인 로직] ---
-if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
-if 'analysis_step' not in st.session_state: st.session_state['analysis_step'] = False
-
 if not st.session_state['logged_in']:
     st.title("🔑 Naver API 인증")
-    client = st.empty()
+    
     col1, col2 = st.columns(2)
     with col1:
-        c_id = st.text_input("Client ID")
+        c_id = st.text_input("Client ID", placeholder="네이버 개발자 센터 발급 ID")
     with col2:
-        c_pw = st.text_input("Client Secret", type="password")
-    if st.button("✅ 시작"):
-        st.session_state.update({'client_id':c_id, 'client_secret':c_pw, 'logged_in':True}); st.rerun()
-    else:
-        client.error("ID/Secret 입력하세요.")
+        c_pw = st.text_input("Client Secret", type="password", placeholder="네이버 개발자 센터 발급 Secret")
+    
+    if st.button("✅ 시작", use_container_width=True):
+        if c_id and c_pw:
+            # 임시로 세션에 저장해보고 테스트 호출
+            st.session_state['client_id'] = c_id
+            st.session_state['client_secret'] = c_pw
+            
+            # 테스트 검색 (단어 하나로 유효성 확인)
+            test_res = get_naver_news("테스트", 1, 1)
+            
+            if test_res is not None: # 성공 시 (빈 리스트일지라도 None이 아니면 키는 정상)
+                st.session_state['logged_in'] = True
+                st.success("인증 성공!")
+                st.rerun()
+            else:
+                # 에러 메시지는 get_naver_news 안에서 st.error로 출력됨
+                st.session_state['client_id'] = None
+                st.session_state['client_secret'] = None
+        else:
+            st.warning("ID와 Secret을 모두 입력해 주세요.")
 else:
     render_header()
     
