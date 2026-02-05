@@ -123,6 +123,8 @@ def render_header():
             st.session_state.clear(); st.rerun()
 
 # --- [3. 메인 로직] ---
+if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
+if 'analysis_step' not in st.session_state: st.session_state['analysis_step'] = False
 if not st.session_state['logged_in']:
     st.title("🔑 Naver API 인증")
     
