@@ -15,6 +15,7 @@ from streamlit_lottie import st_lottie
 import platform
 import os
 import urllib.error
+from typing import Dict, List, Optional, Tuple
 
 # --- [1. 설정 및 데이터 관리 함수] ---
 st.set_page_config(page_title="🔍 뉴스 키워드 시각화")
