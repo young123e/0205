@@ -258,9 +258,9 @@ else:
 
         st.divider()
         st.subheader(f"🛠️ '{st.session_state['current_keyword']}' 결과 정제")
-        use_auto = st.toggle("💾 영구 제외 단어장 자동 적용", value=True)
+        use_auto = st.toggle("💾 제외 단어 적용", value=True)
         default_sel = [w for w in top_words if w not in saved_stops] if use_auto else top_words
-        selected = st.multiselect("포함할 단어 선택:", options=top_words, default=default_sel)
+        selected = st.multiselect("단어 선택:", options=top_words, default=default_sel)
 
         if st.button("✨ 워드클라우드 생성"):
             removed = set(top_words) - set(selected)
