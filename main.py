@@ -80,7 +80,7 @@ def getTokenizer():
 
 def get_font_path() -> Optional[str]:
     # 1. 먼저 resources 폴더에 직접 업로드한 폰트가 있는지 확인
-    local_font = './resources/NanumGothic.ttf' # 파일명에 맞춰 수정
+    local_font = './resources/NanumGothic-Regular.ttf' # 파일명에 맞춰 수정
     if os.path.exists(local_font):
         return local_font
     
