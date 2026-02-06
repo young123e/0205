@@ -141,51 +141,41 @@ if 'analysis_step' not in st.session_state: st.session_state['analysis_step'] = 
 if not st.session_state['logged_in']:
     st.title("🔑 Naver API 인증")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        c_id = st.text_input("Client ID")
-    with col2:
-        c_pw = st.text_input("Client Secret", type="password")
+    # 1. 사용자 이름(키) 입력 받기
+    user_name = st.text_input("사용자 이름을 입력하세요 (미리 등록된 이름)")
     
     if st.button("✅ 시작", use_container_width=True):
-        if c_id and c_pw:
-            # 임시로 세션에 저장해보고 테스트 호출
-            st.session_state['client_id'] = c_id
-            st.session_state['client_secret'] = c_pw
-            
-            # 테스트 검색 (단어 하나로 유효성 확인)
-            test_res = get_naver_news("테스트", 1, 1)
-            
-            if test_res is not None: # 성공 시 (빈 리스트일지라도 None이 아니면 키는 정상)
-                st.session_state['logged_in'] = True
-                st.success("인증 성공!")
-                st.rerun()
-            else:
-                # 에러 메시지는 get_naver_news 안에서 st.error로 출력됨
-                st.session_state['client_id'] = None
-                st.session_state['client_secret'] = None
+        if user_name:
+            try:
+                # 2. Secrets에서 입력한 이름에 해당하는 정보 가져오기
+                # st.secrets["USER_ABC"] 형태의 딕셔너리에 접근
+                user_info = st.secrets.get(user_name)
+                
+                if user_info:
+                    c_id = user_info["CLIENT_ID"]
+                    c_pw = user_info["CLIENT_SECRET"]
+                    
+                    # 세션에 저장 및 테스트
+                    st.session_state['client_id'] = c_id
+                    st.session_state['client_secret'] = c_pw
+                    
+                    # 테스트 검색 함수 호출 (작성하신 함수 사용)
+                    test_res = get_naver_news("테스트", 1, 1)
+                    
+                    if test_res is not None:
+                        st.session_state['logged_in'] = True
+                        st.success(f"{user_name}님, 인증 성공!")
+                        st.rerun()
+                else:
+                    st.error("등록되지 않은 사용자 이름입니다. Secrets 설정을 확인하세요.")
+            except Exception as e:
+                st.error(f"오류 발생: {e}")
         else:
-            st.warning("ID와 Secret을 모두 입력해 주세요.")
+            st.warning("이름을 입력해 주세요.")
 else:
     render_header()
     
-    with st.expander("🚫 불용어 관리"):
-        saved_stops = load_user_stopwords()
-        if saved_stops:
-            st.write(f"총 {len(saved_stops)}개 저장됨")
-            
-            col1, col2= st.columns([4, 1])
-            with col1: 
-                
-                to_del = st.multiselect(
-                    "삭제할 단어 선택", # 내부적으로 필요한 이름
-                    options=sorted(list(saved_stops)),
-                    label_visibility="collapsed" # 레이블을 완전히 제거하고 공간도 안 차지함
-                )
-            with col2:
-                if st.button("단어 삭제"):
-                    save_user_stopwords(saved_stops - set(to_del)); st.rerun()
-        else: st.info("저장된 단어가 없습니다.")
+
 
     with st.form(key='search_form'):
         
@@ -257,10 +247,61 @@ else:
         saved_stops = load_user_stopwords()
 
         st.divider()
-        st.subheader(f"🛠️ '{st.session_state['current_keyword']}' 결과 정제")
+        st.subheader(f"🛠️ '{st.session_state['current_keyword']}' 키워드 분석 결과")
+        
         use_auto = st.toggle("💾 제외 단어 적용", value=True)
         default_sel = [w for w in top_words if w not in saved_stops] if use_auto else top_words
+        
         selected = st.multiselect("단어 선택:", options=top_words, default=default_sel)
+        with st.expander("🚫 불용어 관리"):
+            saved_stops = load_user_stopwords()
+            
+            # 1. 단어 추가 섹션 (새로 분석된 단어들을 미리 세팅)
+            st.markdown("#### ➕ 단어 추가")
+            col_add1, col_add2 = st.columns([4, 1])
+            with col_add1:
+                # 현재 분석 결과(top_words) 중 아직 불용어에 등록되지 않은 단어들을 기본값으로 제안
+                suggested_new_stops = [w for w in top_words if w not in saved_stops]
+                to_add = st.multiselect(
+                    "불용어로 추가할 단어 선택",
+                    options=top_words, 
+                    default=[], # 혹은 suggested_new_stops를 넣으면 분석된 모든 단어가 세팅됩니다.
+                    key="add_stop_words",
+                    help="분석 결과에서 제외하고 싶은 단어를 선택하세요."
+                )
+            with col_add2:
+                if st.button("단어 추가", use_container_width=True):
+                    if to_add:
+                        save_user_stopwords(saved_stops.union(set(to_add)))
+                        st.toast(f"{len(to_add)}개 단어가 불용어 목록에 추가되었습니다.")
+                        st.rerun()
+                    else:
+                        st.warning("단어가 분석 결과에 없습니다.")
+
+            st.divider()
+
+            # 2. 단어 삭제 섹션 (기존에 저장된 불용어 관리)
+            st.markdown("#### ➖ 단어 차단 해제")
+            if saved_stops:
+                st.write(f"현재 총 {len(saved_stops)}개의 단어가 차단되어 있습니다.")
+                col_del1, col_del2 = st.columns([4, 1])
+                with col_del1:
+                    to_del = st.multiselect(
+                        "삭제할 단어 선택",
+                        options=sorted(list(saved_stops)),
+                        label_visibility="collapsed",
+                        key="del_stop_words"
+                    )
+                with col_del2:
+                    if st.button("차단 해제", use_container_width=True):
+                        if to_del:
+                            save_user_stopwords(saved_stops - set(to_del))
+                            st.toast(f"{len(to_del)}개 단어가 삭제되었습니다.")
+                            st.rerun()
+                        else:
+                            st.warning("선택된 단어가 없습니다.")
+            else:
+                st.info("현재 저장된 불용어가 없습니다.")
 
         if st.button("✨ 워드클라우드 생성"):
             removed = set(top_words) - set(selected)
@@ -283,6 +324,8 @@ else:
                     for k in st.session_state['display_dict'].keys()
                 ]
                 st.dataframe(pd.DataFrame(stat_data), use_container_width=True)
+            
+                
 
             # --- [추가된 섹션: 스크랩 기사 목록] ---
             st.divider()
