@@ -302,6 +302,7 @@ else:
                             st.warning("선택된 단어가 없습니다.")
             else:
                 st.info("현재 저장된 불용어가 없습니다.")
+        st.divider()
 
         if st.button("✨ 워드클라우드 생성"):
             removed = set(top_words) - set(selected)
@@ -313,7 +314,7 @@ else:
             st.rerun()
 
         if 'display_dict' in st.session_state:
-            st.divider()
+            
             c1, c2 = st.columns([2, 1.5])
             with c1: plotChart(st.session_state['display_dict'], st)
             with c2: 
